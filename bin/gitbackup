@@ -1,0 +1,70 @@
+#!/bin/bash -eu
+
+BACKUP_DIR=~/.cache/gitbackup
+
+main() {
+  if (($# > 0)); then
+    case "$1" in
+      backup)
+        shift
+        backup "$@"
+        return
+        ;;
+      tig)
+        shift
+        export GIT_DIR="$(get_gitdir "$(get_worktree)")"
+        exec tig "$@"
+        ;;
+    esac
+  fi
+
+  export GIT_WORK_TREE="$(get_worktree)"
+  export GIT_DIR="$(get_gitdir "$GIT_WORK_TREE")"
+  exec git "$@"
+}
+
+backup() {
+  local file="$1"
+  export GIT_WORK_TREE="$(get_worktree "$file")"
+  export GIT_DIR="$(get_gitdir "$GIT_WORK_TREE")"
+
+  mkdir -p "$BACKUP_DIR"
+  if [[ ! -e "$GIT_DIR" ]]; then
+    git init
+  fi
+
+  local status
+  status=$(git status --porcelain -- "$file")
+  if [[ -n "$status" ]]; then
+    git add -- "$file"
+    local relative_path="${file#$GIT_WORK_TREE/}"
+    git commit --message "$relative_path" -- "$file"
+  fi
+}
+
+get_worktree() {
+  local dir
+  if (($# > 0)); then
+    dir="$(dirname "$1")"
+  else
+    dir="$PWD"
+  fi
+
+  local worktree
+  worktree="$(cd "$dir" && git rev-parse --show-toplevel 2>/dev/null || true)"
+  if [[ -z "$worktree" ]]; then
+    if [[ "$dir/" =~ ^$HOME/ ]]; then
+      worktree=~
+    else
+      worktree=/
+    fi
+  fi
+  echo "$worktree"
+}
+
+get_gitdir() {
+  local worktree="$1"
+  echo "$BACKUP_DIR/${worktree//\//%}.git"
+}
+
+main "$@"
