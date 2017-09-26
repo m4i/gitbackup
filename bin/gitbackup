@@ -25,6 +25,12 @@ main() {
 
 backup() {
   local file="$1"
+
+  # ignore .git directory
+  if [[ "$file" =~ /\.git/ ]]; then
+    return
+  fi
+
   export GIT_WORK_TREE="$(get_worktree "$file")"
   export GIT_DIR="$(get_gitdir "$GIT_WORK_TREE")"
 
