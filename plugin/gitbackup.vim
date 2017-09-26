@@ -5,8 +5,8 @@ let g:loaded_gitbackup = 1
 
 let s:__dir__ = expand('<sfile>:p:h')
 
-function! s:gitbackup(path)
-  let l:out = systemlist(s:__dir__ . '/../bin/gitbackup backup ' . a:path)
+function! s:gitbackup()
+  let l:out = systemlist(s:__dir__ . '/../bin/gitbackup backup ' . expand('%:p:S'))
   if v:shell_error != 0
     for line in l:out
       echoerr line
@@ -16,6 +16,6 @@ endfunction
 
 augroup gitbackup
   autocmd!
-  autocmd BufWritePre  * call s:gitbackup(expand('%:p:S'))
-  autocmd BufWritePost * call s:gitbackup(expand('%:p:S'))
+  autocmd BufWritePre  * call s:gitbackup()
+  autocmd BufWritePost * call s:gitbackup()
 augroup END
